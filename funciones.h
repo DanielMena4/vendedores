@@ -3,101 +3,245 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-FILE *archivo;
 
-struct personal
-{
+#define MAX_EMPLEADOS 100
+
+#include <stdio.h>
+#include <stdlib.h>
+
+void altaEmpleado(FILE *archivo, int *contadorId) {
+    int ultimoID;
+    int id1;
+
+    // Inicializar el último ID en 0
+    ultimoID = 0;
+
+    // Buscar el último ID en el archivo
+    while (fscanf(archivo, "%d,%*[^,],%*f,%*d\n", &id1) == 1) {
+        ultimoID = id1;
+    }
+
+    // Obtener el último ID presente en el archivo
+    //obtenerUltimoID(archivo, &ultimoID);
+
+    // Asignar el siguiente ID al nuevo empleado
+    int id = ultimoID + 1;
+
     char nombre[50];
-    char salario[20];
-    char horas[20];
+    float sueldo;
+    int horas;
 
-}info_personal;
+    // Solicitar información del nuevo empleado
+    printf("Ingrese el nombre del empleado: ");
+    scanf("%s", nombre);
+    printf("Ingrese el sueldo del empleado: ");
+    scanf("%f", &sueldo);
+    printf("Ingrese las horas semanales de trabajo: ");
+    scanf("%d", &horas);
 
-void crear()
-{
-    char direccion [] = "D:\\informacion_personal";
-    archivo = fopen(direccion, "wt");
-    if (archivo == NULL)
-    {
-        printf("Error al tratar de crear el archivo");
-        return 1;
-    }
-    fprintf(archivo,"\t : Datos del personal : \n");
-    printf("\n\t: Ingrese los datos del empleado: \n");
-    
-    fflush(stdin);
-    printf("\nNombre: "); scanf("%s",info_personal.nombre);
-    printf("\nhoras: "); scanf("%s",info_personal.horas);
-    printf("\nsalario: "); scanf("%s",info_personal.salario);
-
-    fprintf(archivo,"\n\nNombre : ");
-    fwrite(info_personal.nombre,1,strlen(info_personal.nombre),archivo);
-
-    fprintf(archivo,"\nhoras : ");
-    fwrite(info_personal.horas,1,strlen(info_personal.horas),archivo);
-        
-    fprintf(archivo,"\nsalario : ");
-    fwrite(info_personal.salario,1,strlen(info_personal.salario),archivo);
-    
-    fclose(archivo);   
+    // Escribir la información del nuevo empleado en el archivo
+    fprintf(archivo, "%d,%s,%.2f,%d\n", id, nombre, sueldo, horas);
+    printf("Empleado dado de alta con ID: %d\n", id);
 }
 
-void agregar()
-{
-    char direccion [] = "D:\\informacion_personal";
-    char rpt = 's';
-    archivo = fopen(direccion, "at");   
-    if (archivo == NULL)
-    {
-        printf("Error al tratar de abrir el archivo");
-        return 1;
+void bajaEmpleado(FILE *archivo, FILE *archivoBajas) {
+
+    int idBuscar;
+    printf("Ingrese el ID del empleado a dar de baja: ");
+    scanf("%d", &idBuscar);
+
+    int id, encontrado = 0;
+    char nombre[50];
+    float sueldo;
+    int horas;
+
+    // Crear un archivo temporal para almacenar empleados temporales
+    FILE *temporal = fopen("temporal.txt", "w");
+    if (temporal == NULL) {
+        printf("Error al abrir el archivo temporal.\n");
+        exit(1);
     }
-    printf("\n\t: Ingrese los datos del empleado: \n");
-    do
-    {
-        printf("\nNombre: "); scanf("%s",info_personal.nombre);
-        printf("\nhoras: "); scanf("%s",info_personal.horas);
-        printf("\nsalario: "); scanf("%s",info_personal.salario);
 
-        fprintf(archivo,"\n\nNombre : ");
-        fwrite(info_personal.nombre,1,strlen(info_personal.nombre),archivo);
+    while (fscanf(archivo, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        if (id == idBuscar) {
+            fprintf(archivoBajas, "%d,%s,%.2f,%d\n", id, nombre, sueldo, horas);
+            encontrado = 1;
+        } else {
+            fprintf(temporal, "%d,%s,%.2f,%d\n", id, nombre, sueldo, horas);
+        }
+    }
 
-        fprintf(archivo,"\nhoras : ");
-        fwrite(info_personal.horas,1,strlen(info_personal.horas),archivo);
-        
-        fprintf(archivo,"\nsalario : ");
-        fwrite(info_personal.salario,1,strlen(info_personal.salario),archivo);
-        fflush(stdin);
+    fclose(archivo);
+    fclose(temporal);
+    remove("empleados.txt");
+    rename("temporal.txt", "empleados.txt");
+    archivo = fopen("empleados.txt", "a+");
 
-        printf("Desea agregar mas repuestos (s) : ");
-        scanf("%c",&rpt);
-    }while(rpt == 's');
-    fclose(archivo);   
+    if (encontrado) {
+        printf("Empleado dado de baja exitosamente.\n");
+    } else {
+        printf("Empleado no encontrado.\n");
+    }
 }
 
-void visualizar()
-{
-    char direccion [] = "D:\\informacion_personal";
-    int c;
-    archivo = fopen(direccion, "r");   
-    if (archivo == NULL)
-    {
-        printf("Error al tratar de crear el archivo");
-        return 1;
+void listaEmpleados(FILE *archivo) {
+    int id;
+    char nombre[50];
+    float sueldo;
+    int horas;
+
+    printf("\nLista de empleados:\n");
+
+    while (fscanf(archivo, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        printf("\nID: %d\n", id);
+        printf("Nombre: %s\n", nombre);
+        printf("Sueldo: %.2f\n", sueldo);
+        printf("Horas semanales: %d\n", horas);
     }
-    while ((c=fgetc(archivo))!=EOF)
-    {
-        if(c =='\n')
-        {
-            printf("\n");
-        }
-        else
-        {
-            putchar(c);
+}
+
+void consultarDatos(FILE *archivo) {
+    int idBuscar;
+    printf("Ingrese el ID del empleado a consultar: ");
+    scanf("%d", &idBuscar);
+
+    int id, encontrado = 0;
+    char nombre[50];
+    float sueldo;
+    int horas;
+
+    while (fscanf(archivo, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        if (id == idBuscar) {
+            printf("\nID: %d\n", id);
+            printf("Nombre: %s\n", nombre);
+            printf("Sueldo: %.2f\n", sueldo);
+            printf("Horas semanales: %d\n", horas);
+            encontrado = 1;
+            break;
         }
     }
-    
-    fclose(archivo);   
+
+
+    if (!encontrado) {
+        printf("Empleado no encontrado.\n");
+    }
+}
+
+void modificarSalario(FILE *archivo, FILE *archivoCambiosSueldo) {
+
+    int idBuscar;
+    printf("Ingrese el ID del empleado cuyo salario desea modificar: ");
+    scanf("%d", &idBuscar);
+
+    int id, encontrado = 0;
+    char nombre[50];
+    float sueldo;
+    int horas;
+
+    // Crear un archivo temporal para almacenar empleados temporales
+    FILE *temporal = fopen("temporal.txt", "w");
+    if (temporal == NULL) {
+        printf("Error al abrir el archivo temporal.\n");
+        exit(1);
+    }
+
+    while (fscanf(archivo, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        if (id == idBuscar) {
+            printf("Ingrese el nuevo salario: ");
+            scanf("%f", &sueldo);
+            encontrado = 1;
+            fprintf(archivoCambiosSueldo, "%d,%s,%.2f,%d\n", id, nombre, sueldo, horas);
+        }
+
+        fprintf(temporal, "%d,%s,%.2f,%d\n", id, nombre, sueldo, horas);
+    }
+
+    fclose(archivo);
+    fclose(temporal);
+
+    remove("empleados.txt");
+    rename("temporal.txt", "empleados.txt");
+    archivo = fopen("empleados.txt", "a+");
+
+    if (encontrado) {
+        printf("Salario modificado exitosamente.\n");
+    } else {
+        printf("Empleado no encontrado.\n");
+    }
+}
+
+void modificarHoras(FILE *archivo, FILE *archivoCambiosHoras) {
+    int idBuscar;
+    printf("Ingrese el ID del empleado cuyas horas desea modificar: ");
+    scanf("%d", &idBuscar);
+
+    int id, encontrado = 0;
+    char nombre[50];
+    float sueldo;
+    int horas;
+
+    // Crear un archivo temporal para almacenar empleados temporales
+    FILE *temporal = fopen("temporal.txt", "w");
+    if (temporal == NULL) {
+        printf("Error al abrir el archivo temporal.\n");
+        exit(1);
+    }
+
+    while (fscanf(archivo, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        if (id == idBuscar) {
+            printf("Ingrese las nuevas horas semanales: ");
+            scanf("%d", &horas);
+            encontrado = 1;
+            fprintf(archivoCambiosHoras, "%d,%s,%.2f,%d\n", id, nombre, sueldo, horas);
+        }
+
+        fprintf(temporal, "%d,%s,%.2f,%d\n", id, nombre, sueldo, horas);
+    }
+
+    fclose(archivo);
+    fclose(temporal);
+
+    remove("empleados.txt");
+    rename("temporal.txt", "empleados.txt");
+    archivo = fopen("empleados.txt", "a+");
+
+    if (encontrado) {
+        printf("Horas modificadas exitosamente.\n");
+    } else {
+        printf("Empleado no encontrado.\n");
+    }
+}
+
+void consultarModificaciones(FILE *archivoBajas, FILE *archivoCambiosSueldo, FILE *archivoCambiosHoras) {
+    int id;
+    char nombre[50];
+    float sueldo;
+    int horas;
+
+    printf("\nLista de modificaciones:\n");
+
+    printf("\nEmpleados dados de baja:\n");
+    while (fscanf(archivoBajas, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        printf("\nID: %d\n", id);
+        printf("Nombre: %s\n", nombre);
+        printf("Sueldo: %.2f\n", sueldo);
+        printf("Horas semanales: %d\n", horas);
+    }
+
+    printf("\nCambios de sueldo y horas:\n");
+    while (fscanf(archivoCambiosHoras, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        printf("\nID: %d\n", id);
+        printf("Nombre: %s\n", nombre);
+        printf("Sueldo: %.2f\n", sueldo);
+        printf("Horas semanales: %d\n", horas);
+    }
+
+    printf("\nCambios de horas:\n");
+    while (fscanf(archivoCambiosSueldo, "%d,%[^,],%f,%d\n", &id, nombre, &sueldo, &horas) == 4) {
+        printf("\nID: %d\n", id);
+        printf("Nombre: %s\n", nombre);
+        printf("Sueldo: %.2f\n", sueldo);
+        printf("Horas semanales: %d\n", horas);
+    }
 }
 #endif 
